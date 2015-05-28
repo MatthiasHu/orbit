@@ -34,7 +34,6 @@ data Sim = Sim
   , _craftPosition :: V2 Float
   , _craftHeading :: Direction
   , _craftVelocity :: V2 Float
-  , _craftAngularSpeed :: Float
   }
   deriving (Eq, Ord, Show)
 makeLenses ''Sim
@@ -45,7 +44,6 @@ sim0 = Sim
   , _craftPosition = V2 0.7 0
   , _craftHeading = 0
   , _craftVelocity = V2 0 0.003
-  , _craftAngularSpeed = 0.01
   }
 
 
@@ -66,15 +64,14 @@ physicsTick sim = craftPosition %~ (+ sim^.craftVelocity) $ sim
 inputApplication :: Input -> Sim -> Sim
 inputApplication input sim =
     (craftVelocity %~ maybeAcc)
-  . (craftHeading %~ (+ (sim^.craftAngularSpeed)))
-  . (craftAngularSpeed %~ maybeSteer)
+  . (craftHeading %~ maybeSteer)
   . gravity
     $ sim
   where
     maybeAcc = accelerate $ keysFactor forwardKey backwardKey
     accelerate sign = (+) ((angle $ sim ^. craftHeading)^*sign*thrust)
     maybeSteer = steer $ keysFactor ccwKey clockwiseKey
-    steer sign = (+) (sign*torque)
+    steer sign = (+) (sign*angularSpeed)
     keysFactor :: (Num a) => Key -> Key -> a
     keysFactor a b = case keysdown a b of
                      (True, False) -> 1
@@ -85,7 +82,7 @@ inputApplication input sim =
                    ,b `member` (input^.keysDown))
     -- parameters
     thrust = 0.0001
-    torque = 0.005
+    angularSpeed = 0.10
     -- key bindings
     forwardKey = SpecialKey KeyUp
     backwardKey = SpecialKey KeyDown
